@@ -1,0 +1,23 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.35706.149
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{D2ABAB84-BF74-430A-B69E-9DC6D40DDA17}") = "CAB430_assessment2", "CAB430_assessment2\CAB430_assessment2\CAB430_assessment2.dwproj", "{CE7F3CCC-CDAD-4372-99A6-91140826DF02}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Development|Default = Development|Default
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{CE7F3CCC-CDAD-4372-99A6-91140826DF02}.Development|Default.ActiveCfg = Development
+		{CE7F3CCC-CDAD-4372-99A6-91140826DF02}.Development|Default.Build.0 = Development
+		{CE7F3CCC-CDAD-4372-99A6-91140826DF02}.Development|Default.Deploy.0 = Development
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {27D215EF-54E9-42D7-B8B0-6751739B5714}
+	EndGlobalSection
+EndGlobal

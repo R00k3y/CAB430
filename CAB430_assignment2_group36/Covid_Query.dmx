@@ -1,0 +1,186 @@
+// Reset line for mining structure 
+DROP MINING STRUCTURE [Fact Survey]
+
+//Create mining structure for Fact Survey table
+CREATE MINING STRUCTURE [Fact Survey]
+(
+  [Survey_ID] LONG KEY,
+  [Date] TEXT DISCRETE,
+  [Risk_infection_level] TEXT DISCRETE,
+  [Gender] TEXT DISCRETE,
+  [Age] TEXT DISCRETE,
+  [Height] DOUBLE DISCRETIZED,
+  [Weight] DOUBLE DISCRETIZED,
+  [BMI] DOUBLE DISCRETIZED,
+  [BloodType] TEXT DISCRETE,
+  [Insurance] TEXT DISCRETE,
+  [Race] TEXT DISCRETE,
+  [Smoking] TEXT DISCRETE,
+  [Contact_count] LONG DISCRETIZED,
+  [House_count] LONG DISCRETIZED,
+  [Working] TEXT DISCRETE,
+  [Covid19_symptoms] TEXT DISCRETE,
+  [Covid19_contact] TEXT DISCRETE,
+  [Asthma] TEXT DISCRETE,
+  [Kidney_Diesease] TEXT DISCRETE,
+  [Liver_Diesease] TEXT DISCRETE,
+  [Diabetes] TEXT DISCRETE,
+  [Hiv_positive] TEXT DISCRETE,
+  [Hypertension] TEXT DISCRETE,
+  [Other_chronic] TEXT DISCRETE,
+  [Nursing_Home] TEXT DISCRETE,
+  [Health_worker] TEXT DISCRETE
+)
+WITH HOLDOUT (30 PERCENT or 1000 CASES)
+
+
+// Process Fact Survey structure 
+INSERT INTO MINING STRUCTURE [Fact Survey]
+(
+  [Survey_ID],
+  [Date],
+  [Risk_infection_level],
+  [Gender],
+  [Age],
+  [Height],
+  [Weight],
+  [BMI],
+  [BloodType],
+  [Insurance],
+  [Race],
+  [Smoking],
+  [Contact_count],
+  [House_count],
+  [Working],
+  [Covid19_symptoms],
+  [Covid19_contact],
+  [Asthma] ,
+  [Kidney_Diesease] ,
+  [Liver_Diesease] ,
+  [Diabetes] ,
+  [Hiv_positive] ,
+  [Hypertension] ,
+  [Other_chronic] ,
+  [Nursing_Home] ,
+  [Health_worker] 
+)
+OPENQUERY(COVID19Survey,
+  'SELECT 
+     f.Survey_ID,
+     f.Date,
+	 f.Risk_infection_level,
+     p.Gender, p.Age, p.Height, p.Weight, p.BMI, p.BloodType, p.Insurance, p.Race,
+     r.Smoking, r.Contact_count, r.House_count, r.Working, r.Covid19_symptoms, r.Covid19_contact,
+     r.Asthma, r.Kidney_disease, r.Liver_disease, r.Diabetes, r.Hiv_positive, r.Hypertension,
+	 r.Other_chronic, r.Nursing_home, r.Health_worker
+   FROM Fact_survey f
+   JOIN Participant p ON f.Participant = p.Participant_ID
+   JOIN Response r ON f.Response = r.Response_ID')
+
+
+// Reset line for Participant mining model 
+DROP MINING MODEL Participant
+
+// Add demographical mining model 
+ALTER MINING STRUCTURE [Fact Survey]
+ADD MINING MODEL [Participant]
+(
+[Survey_ID],
+[Gender],
+[Age],
+[Height],
+[Weight],
+[BMI],
+[BloodType],
+[Insurance],
+[Race],
+[Risk_infection_level] PREDICT
+) USING Microsoft_Association_Rules
+WITH DRILLTHROUGH
+GO
+INSERT INTO [Participant]
+
+// Reset line for response mining model 
+DROP MINING MODEL Attributes
+
+// Add Attributes mining structure 
+ALTER MINING STRUCTURE [Fact Survey]
+ADD MINING MODEL [Attributes]
+(
+[Survey_ID],
+[Risk_infection_level] PREDICT,
+[Smoking],
+[Contact_count],
+[House_count],
+[Working],
+[Covid19_symptoms],
+[Covid19_contact],
+[Asthma] ,
+[Kidney_Diesease] ,
+[Liver_Diesease] ,
+[Diabetes] ,
+[Hiv_positive] ,
+[Hypertension] ,
+[Other_chronic] ,
+[Nursing_Home] ,
+[Health_worker] 
+) USING Microsoft_Association_Rules
+WITH DRILLTHROUGH
+GO
+INSERT INTO [Attributes]
+
+// Browse training cases for both models 
+SELECT * FROM [Fact Survey].CASES WHERE IsTrainingCase()
+
+
+// batch query with testing as input, predict infection risk-level for each case in the
+// testing dataset based on demographical attributes
+
+SELECT t.[Survey_ID], t.[Gender], t.[Age],t.[Height], t.[Weight], t.[BMI],
+t.[BloodType], t.[Insurance], t.[Race],t.[Risk_infection_level],
+PREDICT([Risk_infection_level]) AS [Prediction on infection risk level]
+From
+[Participant]
+NATURAL PREDICTION JOIN
+(SELECT * FROM [Participant].CASES WHERE IsTestCase()
+) AS t
+
+
+
+// batch querry from database 
+SELECT 
+    t.Smoking, t.Contact_count, t.House_count, t.Working,
+    t.Covid19_symptoms, t.Covid19_contact,
+    t.Asthma, t.Kidney_Disease, t.Liver_Disease,
+    t.Diabetes, t.Hiv_positive, t.Hypertension,
+    t.Other_chronic, t.Nursing_Home, t.Health_worker,
+    PREDICT([Risk_infection_level]) AS [Prediction on infection risk level]
+FROM 
+    [Attributes]
+PREDICTION JOIN 
+    OPENQUERY([COVID19Survey], '
+        SELECT 
+            Smoking, Contact_count, House_count, Working,
+            Covid19_symptoms, Covid19_contact,
+            Asthma, Kidney_Disease, Liver_Disease,
+            Diabetes, Hiv_positive, Hypertension,
+            Other_chronic, Nursing_Home, Health_worker
+        FROM dbo.Response
+    ') AS t
+ON 
+    [Attributes].Smoking = t.Smoking AND
+    [Attributes].Contact_count = t.Contact_count AND
+    [Attributes].House_count = t.House_count AND
+    [Attributes].Working = t.Working AND
+    [Attributes].Covid19_symptoms = t.Covid19_symptoms AND
+    [Attributes].Covid19_contact = t.Covid19_contact AND
+    [Attributes].Asthma = t.Asthma AND
+    [Attributes].Kidney_Diesease = t.Kidney_Disease AND
+    [Attributes].Liver_Diesease = t.Liver_Disease AND
+    [Attributes].Diabetes = t.Diabetes AND
+    [Attributes].Hiv_positive = t.Hiv_positive AND
+    [Attributes].Hypertension = t.Hypertension AND
+    [Attributes].Other_chronic = t.Other_chronic AND
+    [Attributes].Nursing_Home = t.Nursing_Home AND
+    [Attributes].Health_worker = t.Health_worker
+
